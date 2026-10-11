@@ -1,0 +1,29 @@
+# Build artifacts
+target/
+node_modules/
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Database
+*.db
+*.db-journal
+
+# Environment
+.env
+.env.local

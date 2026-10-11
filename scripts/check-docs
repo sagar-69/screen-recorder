@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+"""check-docs: verify that living documents are updated when source files change.
+
+Cross-platform (Python 3, no dependencies). Intended to be called from a
+git pre-commit hook or manually.
+
+Exit codes:
+  0  — all good (docs changed, or only docs/non-source files changed,
+       or commit message contains "Docs-Unchanged: <reason>")
+  1  — source files changed but no living document was touched and no
+       Docs-Unchanged reason was given
+"""
+
+import subprocess
+import sys
+import os
+
+# The three living documents (relative to repo root).
+LIVING_DOCS = {"CONTEXT.md", "FEATURES.md", "ARCHITECTURE.md"}
+
+# File extensions and paths considered "source" (i.e., changes here should
+# trigger a docs-update check).  Everything else (docs themselves, .gitkeep,
+# images, etc.) is ignored.
+SOURCE_EXTENSIONS = {
+    ".rs", ".py", ".swift", ".ts", ".tsx", ".js", ".jsx",
+    ".json", ".toml", ".yaml", ".yml", ".sql", ".css", ".html",
+    ".cs", ".c", ".h", ".cpp", ".m",
+}
+
+# Paths that are never considered source even if they match an extension.
+IGNORED_PREFIXES = ("docs/", "lab/", "spike/", "scripts/check-docs")
+
+
+def git(*args: str) -> str:
+    """Run a git command and return its stdout."""
+    result = subprocess.run(
+        ["git"] + list(args),
+        capture_output=True, text=True, cwd=_repo_root()
+    )
+    return result.stdout.strip()
+
+
+def _repo_root() -> str:
+    """Return the repo root directory."""
+    result = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        print("check-docs: not inside a git repository", file=sys.stderr)
+        sys.exit(1)
+    return result.stdout.strip()
+
+
+def staged_files() -> list[str]:
+    """Return a list of staged file paths (relative to repo root)."""
+    output = git("diff", "--cached", "--name-only", "--diff-filter=ACMR")
+    if not output:
+        return []
+    return output.splitlines()
+
+
+def is_source_file(path: str) -> bool:
+    """Return True if the file is considered a source file."""
+    # Living docs themselves are not source files.
+    if os.path.basename(path) in LIVING_DOCS:
+        return False
+    # Ignored prefixes.
+    for prefix in IGNORED_PREFIXES:
+        if path.startswith(prefix):
+            return False
+    # Check extension.
+    _, ext = os.path.splitext(path)
+    return ext.lower() in SOURCE_EXTENSIONS
+
+
+def is_living_doc(path: str) -> bool:
+    """Return True if the file is one of the three living documents."""
+    return os.path.basename(path) in LIVING_DOCS
+
+
+def check_commit_message_for_bypass() -> bool:
+    """Check if the prepared commit message contains a Docs-Unchanged line.
+
+    This checks .git/COMMIT_EDITMSG if it exists (for `git commit -m`
+    or `git commit --amend`).
+    """
+    root = _repo_root()
+    msg_file = os.path.join(root, ".git", "COMMIT_EDITMSG")
+    if os.path.exists(msg_file):
+        with open(msg_file, "r") as f:
+            for line in f:
+                if line.strip().startswith("Docs-Unchanged:"):
+                    return True
+    return False
+
+
+def main() -> None:
+    files = staged_files()
+    if not files:
+        print("check-docs: no staged files, nothing to check.")
+        sys.exit(0)
+
+    source_changed = any(is_source_file(f) for f in files)
+    docs_changed = any(is_living_doc(f) for f in files)
+
+    if not source_changed:
+        print("check-docs: no source files changed, skipping.")
+        sys.exit(0)
+
+    if docs_changed:
+        print("check-docs: source files changed and living docs updated. ✓")
+        sys.exit(0)
+
+    # Source changed but no docs changed — check for bypass.
+    if check_commit_message_for_bypass():
+        print("check-docs: Docs-Unchanged bypass found in commit message. ✓")
+        sys.exit(0)
+
+    # Fail.
+    print("=" * 70, file=sys.stderr)
+    print("check-docs: WARNING — source files changed but none of the", file=sys.stderr)
+    print("living documents (CONTEXT.md, FEATURES.md, ARCHITECTURE.md)", file=sys.stderr)
+    print("were updated.", file=sys.stderr)
+    print("", file=sys.stderr)
+    print("Either:", file=sys.stderr)
+    print("  1. Update the relevant document(s), or", file=sys.stderr)
+    print("  2. Add 'Docs-Unchanged: <reason>' to your commit message.", file=sys.stderr)
+    print("=" * 70, file=sys.stderr)
+    sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
