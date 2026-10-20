@@ -14,24 +14,24 @@ Screen-Use Detector is a desktop app (macOS + Windows) that tells you which apps
 
 ## 2. Current stage
 
-**Stage 0 — Foundation (no product code)**
+**Stage 1 — Signal Spike (throwaway Python in `spike/`)**
 
 | # | Task | Status |
 |---|------|--------|
-| 1 | Initialise git repo | done |
-| 2 | Create folder layout | done |
-| 3 | Write README.md | done |
-| 4 | Write CONTEXT.md, FEATURES.md, ARCHITECTURE.md | done |
-| 5 | Write docs/design-reference.md (sections 1-7 verbatim) | done |
-| 6 | Write docs/references.md | done |
-| 7 | Write docs/signal-findings.md (empty template) | done |
-| 8 | Check toolchain, report present/missing | done |
-| 9 | Refine event schema v1 | done |
-| 10 | Add scripts/check-docs and pre-commit hook | done |
-| 11 | Demo check-docs failing then passing | done |
-| 12 | Initial commit and tag stage-0 | done |
+| 1 | macOS: TCC permission list reader | in-progress |
+| 2 | macOS: Unified log watcher script | planned |
+| 3 | macOS: Running apps with code-signature info | planned |
+| 4 | Windows: ConsentStore registry dumper | planned |
+| 5 | Windows: Registry change watcher | planned |
+| 6 | Windows: Process module scanner | planned |
+| 7 | Create lab/protocol.md with test matrix steps | planned |
+| 8 | Create frame-grabbing test fixture | planned |
+| 9 | Run macOS scripts and record findings | planned |
+| 10 | Fill docs/signal-findings.md | planned |
+| 11 | Update scoring rules based on findings | planned |
+| 12 | Commit and tag stage-1 | planned |
 
-**Blocked:** nothing.
+**Blocked:** Windows scripts need a Windows machine to test.
 
 ---
 
